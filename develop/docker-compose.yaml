@@ -1,0 +1,53 @@
+version: '3.3'
+
+services:
+  symfony-local:
+    build:
+      context: ./docker/build/http-server
+    volumes:
+      - ../sites/symfony.local:/var/www/html
+    networks:
+      static-network:
+        ipv4_address: 122.0.0.11
+    depends_on:
+      - symfony-database
+    container_name: "symfony-local"
+    environment:
+      PHP_IDE_CONFIG: ${PHP_IDE_CONFIG_DRUPAL}
+      XDEBUG_CONFIG: "remote_enable=1 remote_mode=req remote_port=9000"
+  symfony-database:
+    image: "mysql:5.7"
+    command: --max_allowed_packet=134217728
+    volumes:
+      - "./docker/data/db:/var/lib/mysql"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    networks:
+      static-network:
+        ipv4_address: 122.0.0.2
+    container_name: "symfony-database"
+  symfony-phpmyadmin:
+    depends_on:
+      - symfony-database
+    image: phpmyadmin/phpmyadmin
+    container_name: 'symfony-phpmyadmin'
+    environment:
+      PMA_HOST: 122.0.0.2
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      PMA_USER: ${MYSQL_ROOT_PASSWORD}
+      PMA_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    networks:
+      static-network:
+        ipv4_address: 122.0.0.3
+volumes:
+  .data:
+networks:
+  backend:
+    driver: "bridge"
+  static-network:
+    ipam:
+      config:
+        - subnet: 122.0.0.0/16
